@@ -9,13 +9,20 @@ args="$*"
 version=""
 branch="master"
 
+gitRepo="Ubiquiti-App/UNMS"
+gitRepoRegex=" --git-repo ([^ ]+)"
+if [[ " ${args}" =~ ${gitRepoRegex} ]]; then
+  gitRepo="${BASH_REMATCH[1]}"
+fi
+echo gitRepo="${gitRepo}"
+
 branchRegex=" --branch ([^ ]+)"
-if [[ " $args" =~ $branchRegex ]]; then
+if [[ " ${args}" =~ ${branchRegex} ]]; then
   branch="${BASH_REMATCH[1]}"
 fi
-echo branch="$branch"
+echo branch="${branch}"
 
-repo="https://raw.githubusercontent.com/Ubiquiti-App/UNMS/${branch}"
+repoUrl="https://raw.githubusercontent.com/${gitRepo}/${branch}"
 
 versionRegex=" --version ([^ ]+)"
 if [[ " $args" =~ $versionRegex ]]; then
@@ -23,7 +30,7 @@ if [[ " $args" =~ $versionRegex ]]; then
 fi
 
 if [ -z "$version" ]; then
-  latestVersionUrl="$repo/latest-version"
+  latestVersionUrl="${repoUrl}/latest-version"
   if ! version=$(curl -fsS "${latestVersionUrl}"); then
     echo "Failed to obtain latest version info from $latestVersionUrl"
     exit 1
@@ -39,7 +46,7 @@ fi
 
 cd $temp
 echo "Downloading installation package for version $version."
-packageUrl="$repo/unms-$version.tar.gz"
+packageUrl="${repoUrl}/unms-$version.tar.gz"
 if ! curl -sS "${packageUrl}" | tar xz; then
   echo "Failed to download installation package ${packageUrl}"
   exit 1
