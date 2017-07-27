@@ -14,24 +14,37 @@ gitRepoRegex=" --git-repo ([^ ]+)"
 if [[ " ${args}" =~ ${gitRepoRegex} ]]; then
   gitRepo="${BASH_REMATCH[1]}"
 fi
-echo gitRepo="${gitRepo}"
+echo "gitRepo=${gitRepo}"
+
+gitToken=
+gitTokenRegex=" --git-token ([^ ]+)"
+if [[ " ${args}" =~ ${gitTokenRegex} ]]; then
+  gitToken="${BASH_REMATCH[1]}"
+  echo "gitToken=*****"
+fi
 
 branchRegex=" --branch ([^ ]+)"
 if [[ " ${args}" =~ ${branchRegex} ]]; then
   branch="${BASH_REMATCH[1]}"
 fi
-echo branch="${branch}"
-
-repoUrl="https://raw.githubusercontent.com/${gitRepo}/${branch}"
+echo "branch=${branch}"
 
 versionRegex=" --version ([^ ]+)"
 if [[ " $args" =~ $versionRegex ]]; then
   version="${BASH_REMATCH[1]}"
 fi
+echo "version=${version}"
+
+repoUrl="https://api.github.com/repos/${gitRepo}/contents/"
+
+gitHeaders="--header 'Accept: application/vnd.github.v3.raw'"
+if [ ! -z "${gitToken}" ]; then
+  gitHeaders="${gitHeaders} --header 'Authorization: token ${gitToken}'"
+fi
 
 if [ -z "$version" ]; then
-  latestVersionUrl="${repoUrl}/latest-version"
-  if ! version=$(curl -fsS "${latestVersionUrl}"); then
+  latestVersionUrl="${repoUrl}/latest-version?ref=${branch}"
+  if ! version=$(curl -fsS ${gitHeaders} "${latestVersionUrl}"); then
     echo "Failed to obtain latest version info from $latestVersionUrl"
     exit 1
   fi
@@ -46,8 +59,8 @@ fi
 
 cd $temp
 echo "Downloading installation package for version $version."
-packageUrl="${repoUrl}/unms-$version.tar.gz"
-if ! curl -sS "${packageUrl}" | tar xz; then
+packageUrl="${repoUrl}/unms-$version.tar.gz?ref=${branch}"
+if ! curl -sS ${gitHeaders} "${packageUrl}" | tar xz; then
   echo "Failed to download installation package ${packageUrl}"
   exit 1
 fi
